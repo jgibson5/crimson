@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Manage Users</h1>
+    <form action="" method="post">
+        {{ form.hidden_tag() }}
+
+        {% for user in form.users %}
+        {{ user }}
+        {{ form[form.role_fields[user]].label }}{{ form[form.role_fields[user]] }}
+        {{ form[form.active_fields[user]].label }}{{ form[form.active_fields[user]] }}
+        <br>
+        {% endfor %}
+
+        <p>{{ form.submit() }}</p>
+    </form>
+{% endblock %}

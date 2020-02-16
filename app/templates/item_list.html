@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Wish List</h1>
+    <form action="" method="post">
+        {{ form.hidden_tag() }}
+
+        {% for item_rank_field in form.item_rank_fields %}
+        {{ form[item_rank_field].label }}{{ form[item_rank_field] }}
+        {% if form[item_rank_field].errors %}
+            <ul class="errors">
+                {% for error in form[item_rank_field].errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+        <br>
+        {% endfor %}
+
+        <p>{{ form.submit() }}</p>
+    </form>
+{% endblock %}
+

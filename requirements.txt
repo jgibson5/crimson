@@ -1,0 +1,7 @@
+flask
+flask-migrate
+flask-sqlalchemy
+flask-user
+flask-wtf
+python-dotenv
+pyyaml

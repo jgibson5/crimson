@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Check wish lists for an item</h1>
+    <form action="" method="post">
+        {{ form.hidden_tag() }}
+
+        {{ form.item_drop.label }}{{ form.item_drop }}<br>
+
+        <p>{{ form.submit() }}</p>
+
+        {% if item_check_error %}
+        <p>{{ item_check_error }}</p>
+        {% endif %}
+
+        {% for field in form.assign_fields %}
+        {{ field }}{{ form[field] }}<br>
+        {% endfor %}
+    </form>
+{% endblock %}
