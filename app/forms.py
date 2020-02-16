@@ -36,12 +36,7 @@ def UserManageForm():
 
 
 class MultiCheckboxField(SelectMultipleField):
-    """
-    A multiple-select, except displays a list of checkboxes.
 
-    Iterating the field will produce subfields, allowing custom rendering of
-    the enclosed checkbox fields.
-    """
     widget = ListWidget(prefix_label=False)
     option_widget = CheckboxInput()
 
@@ -50,10 +45,6 @@ class MultiCheckboxField(SelectMultipleField):
 
 
 class NonValidatingSelectField(SelectField):
-    """
-    Attempt to make an open ended select multiple field that can accept dynamic
-    choices added by the browser.
-    """
     def pre_validate(self, form):
         pass
 

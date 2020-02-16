@@ -91,10 +91,9 @@ def assign_item():
 
             item_id = item_assign_form.item_drop.data
             active_users = User.query.filter_by(active=True).all()
-            print(item_id)
-            print(active_users)
+
             item_ranks = ItemRank.query.filter(ItemRank.item_id==item_id, ItemRank.item_list_id.in_(user.item_list_id for user in active_users)).all()
-            print(item_ranks)
+
             for item_rank in item_ranks:
                 user = User.query.filter_by(item_list_id=item_rank.item_list_id).first()
                 item_drop_check_results.append({'rank': item_rank.rank, 'username': user.username})

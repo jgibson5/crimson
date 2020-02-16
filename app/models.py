@@ -33,21 +33,11 @@ class User(db.Model, UserMixin,):
     def has_role(self, role):
         return role in (role.name for role in self.roles)
 
-    # def set_password(self, password):
-    #     self.password_hash = generate_password_hash(password)
-
-    # def check_password(self, password):
-    #     return check_password_hash(self.password_hash, password)
-
     def construct_new_list(self):
         self.item_list = ItemList()
         default_item = Item.query.filter_by(name=Item.default_name).first()
         for slot in range(15):
             self.item_list.items.append(ItemRank(rank=slot+1, item_id=default_item.id))
-
-# @login.user_loader
-# def load_user(id):
-#     return User.query.get(int(id))
 
 
 # Define the Role data model
@@ -55,12 +45,12 @@ class Role(db.Model):
     id = db.Column(db.Integer(), primary_key=True)
     name = db.Column(db.String(50), unique=True)
 
+
 # Define the UserRoles data model
 class UserRoles(db.Model):
     id = db.Column(db.Integer(), primary_key=True)
     user_id = db.Column(db.Integer(), db.ForeignKey('user.id', ondelete='CASCADE'))
     role_id = db.Column(db.Integer(), db.ForeignKey('role.id', ondelete='CASCADE'))
-
 
 
 class Item(db.Model):
