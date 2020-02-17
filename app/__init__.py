@@ -49,7 +49,7 @@ def item_seed():
                 password=user_manager.hash_password('asdf'))
         council_role = models.Role.query.filter_by(name='council').first()
         user1.roles.append(council_role)
-        user1.construct_new_list()
+        user1.construct_new_lists()
         db.session.add(user1)
         db.session.commit()
     db.session.commit()

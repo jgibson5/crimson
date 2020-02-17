@@ -3,8 +3,8 @@ from app import app, db
 from flask_user import current_user, login_required, roles_required
 from werkzeug.urls import url_parse
 
-from app.forms import ItemListFormFactory, ItemDropForm, ItemAssignForm, UserManageForm
-from app.models import User, ItemList, ItemRank, Item, Role
+from app.forms import ItemListFormFactory, ItemDropForm, ItemAssignForm, UserManageForm, GlobalItemLockForm
+from app.models import User, ItemList, ItemRank, Item, Role, LockedItemList
 
 
 @app.route('/')
@@ -43,7 +43,17 @@ def manage_users():
                     user.active = selected_active
                     active_update = True
 
-                if role_update or active_update:
+                list_lock_update = False
+                list_locked_field = user_manage_form.list_locked_fields[username]
+                selected_list_locked = getattr(user_manage_form, list_locked_field).data
+
+                if selected_list_locked != user.item_list_locked:
+                    user.item_list_locked = selected_list_locked
+                    if selected_list_locked:
+                        user.locked_item_list = LockedItemList(item_list=user.item_list)
+                    list_lock_update = True
+
+                if role_update or active_update or list_lock_update:
                     db.session.add(user)
                     db.session.commit()
                     changes_made = True
@@ -55,14 +65,67 @@ def manage_users():
         return redirect(url_for('index'))
 
 
+@app.route('/item_list_lock', methods=['GET', 'POST'])
+@roles_required('council')
+def item_list_lock():
+    if current_user.is_authenticated and current_user.has_role('council'):
+        global_item_lock_form = GlobalItemLockForm()
+        if global_item_lock_form.validate_on_submit():
+            lock_lists = None
+            lock_text = ""
+            if global_item_lock_form.force_lock_lists.data:
+                lock_lists = True
+                lock_text = "locked"
+            elif global_item_lock_form.force_unlock_lists.data:
+                lock_lists = False
+                lock_text = "unlocked"
+            else:
+                raise Exception("uhhhhhh")
+            users = User.query.all()
+            for user in users:
+                user.item_list_locked = lock_lists
+                if lock_lists:
+                    user.locked_item_list = LockedItemList(item_list=user.item_list)
+                db.session.add(user)
+            db.session.commit()
+            flash(f"Item lists have been {lock_text}.")
+        return render_template('global_item_list_lock.html', form=global_item_lock_form)
+    else:
+        return redirect(url_for('index'))
+
+
 @app.route('/item_list', methods=['GET', 'POST'])
 @login_required
 def item_list():
     if current_user.is_authenticated:
-        item_list_form = ItemListFormFactory().construct(current_user.item_list)(request.form)
+        if current_user.item_list_locked:
+            return render_template('locked_item_list.html', item_ranks=current_user.item_list.items)
+        else:
+            item_list_form = ItemListFormFactory().construct(current_user.item_list, current_user.locked_item_list_id)
+
+            if item_list_form.validate_on_submit():
+                for form_item, old_item_rank in zip(item_list_form.item_rank_fields, current_user.item_list.items):
+                    new_item_id = getattr(item_list_form, form_item).data
+                    if new_item_id != old_item_rank.item_id:
+                        item_rank = ItemRank.query.get(old_item_rank.id)
+                        item_rank.item_id = new_item_id
+                        db.session.add(item_rank)
+                db.session.commit()
+                flash("Wish list has been updated.")
+            return render_template('item_list.html', form=item_list_form)
+    else:
+        return redirect(url_for('index'))
+
+
+@app.route('/item_list/<username>', methods=['GET', 'POST'])
+@roles_required('council')
+def user_item_list(username):
+    if current_user.is_authenticated and current_user.has_role('council'):
+        user = User.query.filter_by(username=username).first()
+        item_list_form = ItemListFormFactory().construct(user.item_list, user.locked_item_list_id)
 
         if item_list_form.validate_on_submit():
-            for form_item, old_item_rank in zip(item_list_form.item_rank_fields, current_user.item_list.items):
+            for form_item, old_item_rank in zip(item_list_form.item_rank_fields, user.item_list.items):
                 new_item_id = getattr(item_list_form, form_item).data
                 if new_item_id != old_item_rank.item_id:
                     item_rank = ItemRank.query.get(old_item_rank.id)
@@ -114,7 +177,7 @@ def assign_item():
                     item_rank = item_assign_form.parse_label(field_name)
                     default_item = Item.query.filter_by(name='empty').first()
                     user = User.query.filter_by(username=item_rank['username']).first()
-                    item_rank_to_update = ItemRank.query.filter_by(rank=item_rank['rank'], item_list_id=user.item_list_id).first()
+                    item_rank_to_update = ItemRank.query.filter_by(rank=item_rank['rank'], item_list_id=user.locked_item_list_id).first()
                     item_rank_to_update.item_id = default_item.id
                     db.session.add(item_rank_to_update)
                     db.session.commit()

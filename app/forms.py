@@ -4,7 +4,7 @@ from wtforms.validators import DataRequired, Email, EqualTo
 from wtforms.widgets.core import ListWidget, CheckboxInput
 from wtforms.ext.sqlalchemy.fields import QuerySelectField
 
-from app.models import User, Item, Role
+from app.models import User, Item, Role, LockedItemRank
 
 
 def UserManageForm():
@@ -16,6 +16,7 @@ def UserManageForm():
 
     UserManageForm.role_fields = {}
     UserManageForm.active_fields = {}
+    UserManageForm.list_locked_fields = {}
     UserManageForm.users = []
     for user in all_users:
         setattr(
@@ -28,9 +29,15 @@ def UserManageForm():
             f"{user.username}_is_active",
             BooleanField("Is Active", false_values=[False], default=user.active),
         )
+        setattr(
+            UserManageForm,
+            f"{user.username}_list_locked",
+            BooleanField("List is Locked", false_values=[False], default=user.item_list_locked),
+        )
         UserManageForm.users.append(user.username)
         UserManageForm.role_fields[user.username] = f"{user.username}_roles"
         UserManageForm.active_fields[user.username] = f"{user.username}_is_active"
+        UserManageForm.list_locked_fields[user.username] = f"{user.username}_list_locked"
 
     return UserManageForm()
 
@@ -57,21 +64,36 @@ class ItemListFormFactory():
 
         # def validate
 
-    def construct(self, current_item_list):
-        all_items = sorted([(i.id, i.name) for i in Item.query.all()], key=lambda x: x[1] if x[1] != 'empty' else 'AAAA')
+    def construct(self, current_item_list, locked_item_list_id):
+        all_items = self._sort_item_choices(Item.query.all())
 
         self.ItemListForm.item_rank_fields = []
 
         for item_rank in current_item_list.items:
             item_rank_field_name = self.slot_name + str(item_rank.rank)
+            item_choices = []
+            if item_rank.rank in (1, 2):
+                default_item = Item.query.filter_by(name='empty').first()
+                current_rank = LockedItemRank.query.filter_by(rank=item_rank.rank, locked_item_list_id=locked_item_list_id).first()
+                promotable_rank = LockedItemRank.query.filter_by(rank=item_rank.rank+1, locked_item_list_id=locked_item_list_id).first()
+                demotable_rank = LockedItemRank.query.filter_by(rank=item_rank.rank-1, locked_item_list_id=locked_item_list_id).first()
+                unsorted_choices = [default_item, current_rank.item, promotable_rank.item]
+                if demotable_rank is not None and demotable_rank.item is not None:
+                    unsorted_choices.append(demotable_rank.item)
+                item_choices = self._sort_item_choices(unsorted_choices)
+            else:
+                item_choices = all_items
             setattr(
                 self.ItemListForm,
                 item_rank_field_name,
-                NonValidatingSelectField(f"Item Rank {item_rank.rank}", choices=all_items, default=item_rank.item_id, validators=[]) # validators=[DataRequired()]
+                NonValidatingSelectField(f"Item Rank {item_rank.rank}", choices=item_choices, default=item_rank.item_id, validators=[]) # validators=[DataRequired()]
             )
             self.ItemListForm.item_rank_fields.append(item_rank_field_name)
 
-        return self.ItemListForm
+        return self.ItemListForm()
+
+    def _sort_item_choices(self, item_choices):
+        return sorted([(i.id, i.name) for i in item_choices], key=lambda x: x[1] if x[1] != 'empty' else 'AAAA')
 
 
 class ItemDropForm(FlaskForm):
@@ -105,3 +127,6 @@ def ItemAssignForm(item_ranks=None, current_form=None):
     return ItemAssignForm(current_form) if current_form else ItemAssignForm()
 
 
+class GlobalItemLockForm(FlaskForm):
+    force_lock_lists = SubmitField('Lock')
+    force_unlock_lists = SubmitField('Unlock')

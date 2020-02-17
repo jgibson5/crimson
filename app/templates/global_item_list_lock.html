@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Manage Item List Lock</h1>
+    <form action="" method="post">
+        {{ form.hidden_tag() }}
+
+        <p>{{ form.force_lock_lists }}</p>
+        <p>{{ form.force_unlock_lists }}</p>
+    </form>
+{% endblock %}

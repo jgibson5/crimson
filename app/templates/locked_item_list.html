@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Wish List</h1>
+    <h3>Wish lists are currently locked.</h3>
+
+    {% for item_rank in item_ranks %}
+    Item Rank {{ item_rank.rank }} | {{ item_rank.item.name }}
+    <br>
+    {% endfor %}
+{% endblock %}
+

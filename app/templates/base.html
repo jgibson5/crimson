@@ -13,6 +13,7 @@
       {% if current_user.has_role('council') %}
       <a href="{{ url_for('assign_item') }}">Check Loot Drop</a>
       <a href="{{ url_for('manage_users') }}">Manage Users</a>
+      <a href="{{ url_for('item_list_lock') }}">Manage Item List Lock</a>
       {% endif %}
       <a href="{{ url_for('user.logout') }}">Logout</a>
       {% endif %}
