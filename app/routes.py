@@ -177,7 +177,7 @@ def assign_item():
                     item_rank = item_assign_form.parse_label(field_name)
                     default_item = Item.query.filter_by(name='empty').first()
                     user = User.query.filter_by(username=item_rank['username']).first()
-                    item_rank_to_update = ItemRank.query.filter_by(rank=item_rank['rank'], item_list_id=user.locked_item_list_id).first()
+                    item_rank_to_update = ItemRank.query.filter_by(rank=item_rank['rank'], item_list_id=user.item_list_id).first()
                     item_rank_to_update.item_id = default_item.id
                     db.session.add(item_rank_to_update)
                     db.session.commit()

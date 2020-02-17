@@ -2,4 +2,4 @@ venv/**
 app.db
 **/__pycache__/**
 migrations/**
-aws_credientials.env
+aws_credentials.env
