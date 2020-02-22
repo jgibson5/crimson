@@ -1,5 +1,6 @@
 from app import db
 from flask_user import UserMixin
+import datetime
 
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -45,8 +46,6 @@ class User(db.Model, UserMixin,):
             self.item_list.items.append(ItemRank(rank=slot+1, item_id=default_item.id))
 
         self.locked_item_list = LockedItemList(item_list=self.item_list)
-        for item in self.locked_item_list.items:
-            print(item)
 
 
 # Define the Role data model
@@ -110,6 +109,7 @@ class ItemList(db.Model):
 class LockedItemList(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     items = db.relationship("LockedItemRank", backref='list', lazy='dynamic')
+    locked_ts = db.Column(db.DateTime, default=datetime.datetime.utcnow)
 
     def __init__(self, item_list=None):
         super().__init__()
