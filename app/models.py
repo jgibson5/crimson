@@ -45,6 +45,8 @@ class User(db.Model, UserMixin,):
             self.item_list.items.append(ItemRank(rank=slot+1, item_id=default_item.id))
 
         self.locked_item_list = LockedItemList(item_list=self.item_list)
+        for item in self.locked_item_list.items:
+            print(item)
 
 
 # Define the Role data model
@@ -89,7 +91,7 @@ class LockedItemRank(db.Model):
     item = db.relationship('Item', backref=db.backref('locked_item', uselist=False))
 
     def __repr__(self):
-        return '<ItemRank {}:{}:{}>'.format(self.item_list_id, self.rank, self.item)
+        return '<LockedItemRank {}:{}:{}>'.format(self.locked_item_list_id, self.rank, self.item)
 
 
 class ItemList(db.Model):
@@ -112,7 +114,7 @@ class LockedItemList(db.Model):
     def __init__(self, item_list=None):
         super().__init__()
         if item_list:
-            self.items = [LockedItemRank(rank=item_rank.rank, item=item_rank.item) for item_rank in item_list.items]
+            self.items = [LockedItemRank(rank=item_rank.rank, item_id=item_rank.item_id) for item_rank in item_list.items]
 
     def __repr__(self):
         return '<LockedItemList {}>'.format(self.id)

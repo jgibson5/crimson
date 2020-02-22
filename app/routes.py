@@ -3,7 +3,7 @@ from app import app, db
 from flask_user import current_user, login_required, roles_required
 from werkzeug.urls import url_parse
 
-from app.forms import ItemListFormFactory, ItemDropForm, ItemAssignForm, UserManageForm, GlobalItemLockForm
+from app.forms import ItemListFormFactory, ItemDropForm, ItemAssignForm, UserManageForm, GlobalItemLockForm, sort_item_choices
 from app.models import User, ItemList, ItemRank, Item, Role, LockedItemList
 
 
@@ -79,8 +79,6 @@ def item_list_lock():
             elif global_item_lock_form.force_unlock_lists.data:
                 lock_lists = False
                 lock_text = "unlocked"
-            else:
-                raise Exception("uhhhhhh")
             users = User.query.all()
             for user in users:
                 user.item_list_locked = lock_lists
@@ -144,7 +142,7 @@ def assign_item():
     if current_user.is_authenticated and current_user.has_role('council'):
         item_assign_form = ItemAssignForm(current_form=request.form)
 
-        all_items = sorted([(i.id, i.name) for i in Item.query.all()], key=lambda x: x[1] if x[1] != 'empty' else 'AAAA')
+        all_items = sort_item_choices([(i.id, i.name) for i in Item.query.all()])
         item_assign_form.item_drop.choices = all_items
 
         item_drop_check_results = []
@@ -175,7 +173,7 @@ def assign_item():
                 if field.data:
                     assign_click = True
                     item_rank = item_assign_form.parse_label(field_name)
-                    default_item = Item.query.filter_by(name='empty').first()
+                    default_item = Item.query.filter_by(name=Item.default_name).first()
                     user = User.query.filter_by(username=item_rank['username']).first()
                     item_rank_to_update = ItemRank.query.filter_by(rank=item_rank['rank'], item_list_id=user.item_list_id).first()
                     item_rank_to_update.item_id = default_item.id

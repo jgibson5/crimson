@@ -65,7 +65,7 @@ class ItemListFormFactory():
         # def validate
 
     def construct(self, current_item_list, locked_item_list_id):
-        all_items = self._sort_item_choices(Item.query.all())
+        all_items = sort_item_choices(Item.query.all())
 
         self.ItemListForm.item_rank_fields = []
 
@@ -73,14 +73,14 @@ class ItemListFormFactory():
             item_rank_field_name = self.slot_name + str(item_rank.rank)
             item_choices = []
             if item_rank.rank in (1, 2):
-                default_item = Item.query.filter_by(name='empty').first()
+                default_item = Item.query.filter_by(name=Item.default_name).first()
                 current_rank = LockedItemRank.query.filter_by(rank=item_rank.rank, locked_item_list_id=locked_item_list_id).first()
                 promotable_rank = LockedItemRank.query.filter_by(rank=item_rank.rank+1, locked_item_list_id=locked_item_list_id).first()
                 demotable_rank = LockedItemRank.query.filter_by(rank=item_rank.rank-1, locked_item_list_id=locked_item_list_id).first()
                 unsorted_choices = [default_item, current_rank.item, promotable_rank.item]
                 if demotable_rank is not None and demotable_rank.item is not None:
                     unsorted_choices.append(demotable_rank.item)
-                item_choices = self._sort_item_choices(unsorted_choices)
+                item_choices = sort_item_choices(unsorted_choices)
             else:
                 item_choices = all_items
             setattr(
@@ -92,9 +92,6 @@ class ItemListFormFactory():
 
         return self.ItemListForm()
 
-    def _sort_item_choices(self, item_choices):
-        return sorted([(i.id, i.name) for i in item_choices], key=lambda x: x[1] if x[1] != 'empty' else 'AAAA')
-
 
 class ItemDropForm(FlaskForm):
     item_drop = NonValidatingSelectField("Item")
@@ -102,8 +99,12 @@ class ItemDropForm(FlaskForm):
 
     def __init__(self):
         super().__init__()
-        all_items = sorted([(i.id, i.name) for i in Item.query.all()], key=lambda x: x[1] if x[1] != 'empty' else 'AAAA')
-        self.item_drop.choices = all_items
+        all_items = [(i.id, i.name) for i in Item.query.all()]
+        self.item_drop.choices = sort_item_choices(all_items)
+
+
+def sort_item_choices(item_choices):
+    return sorted([(i.id, i.name) for i in item_choices], key=lambda x: x[1] if x[1] != Item.default_name else 'AAAA')
 
 
 def ItemAssignForm(item_ranks=None, current_form=None):
