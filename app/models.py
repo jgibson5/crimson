@@ -2,8 +2,6 @@ from app import db
 from flask_user import UserMixin
 import datetime
 
-from werkzeug.security import generate_password_hash, check_password_hash
-
 
 class User(db.Model, UserMixin,):
     id = db.Column(db.Integer, primary_key=True)
@@ -14,7 +12,7 @@ class User(db.Model, UserMixin,):
 
     active = db.Column('is_active', db.Boolean(), nullable=False, server_default='0')
 
-    item_list_locked = db.Column(db.Boolean, default=True)
+    item_list_locked = db.Column(db.Boolean, default=False) # TODO: determine if default should be True or False
 
     item_list_id = db.Column(db.Integer, db.ForeignKey('item_list.id'))
     item_list = db.relationship('ItemList', backref=db.backref('user', uselist=False))
@@ -76,6 +74,9 @@ class ItemRank(db.Model):
     rank = db.Column(db.Integer, index=True)
     item_list_id = db.Column(db.Integer, db.ForeignKey('item_list.id'), index=True)
     item_id = db.Column(db.Integer, db.ForeignKey('item.id'), index=True)
+    # TODO: play around with the back ref here for item assignments.
+    # Is it possible to do something like:
+    #.    item_ranks = selected_item.item
     item = db.relationship('Item', backref=db.backref('item', uselist=False))
 
     def __repr__(self):
@@ -87,7 +88,7 @@ class LockedItemRank(db.Model):
     rank = db.Column(db.Integer, index=True)
     locked_item_list_id = db.Column(db.Integer, db.ForeignKey('locked_item_list.id'), index=True)
     item_id = db.Column(db.Integer, db.ForeignKey('item.id'), index=True)
-    item = db.relationship('Item', backref=db.backref('locked_item', uselist=False))
+    item = db.relationship('Item', foreign_keys=[item_id])
 
     def __repr__(self):
         return '<LockedItemRank {}:{}:{}>'.format(self.locked_item_list_id, self.rank, self.item)
@@ -118,4 +119,19 @@ class LockedItemList(db.Model):
 
     def __repr__(self):
         return '<LockedItemList {}>'.format(self.id)
+
+
+class ItemRankAudit(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    item_rank_id = db.Column(db.Integer, db.ForeignKey('item_rank.id'))
+    timestamp = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+
+    old_item_id = db.Column(db.Integer, db.ForeignKey('item.id'))
+    old_item = db.relationship('Item', foreign_keys=[old_item_id])
+
+    new_item_id = db.Column(db.Integer, db.ForeignKey('item.id'))
+    new_item = db.relationship('Item', foreign_keys=[new_item_id])
+
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    user = db.relationship('User', foreign_keys=[user_id])
 

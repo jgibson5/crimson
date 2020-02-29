@@ -1,5 +1,5 @@
 venv/**
 app.db
 **/__pycache__/**
-migrations/**
+.keys/**
 aws_credentials.env

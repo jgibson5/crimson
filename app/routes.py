@@ -4,7 +4,7 @@ from flask_user import current_user, login_required, roles_required
 from werkzeug.urls import url_parse
 
 from app.forms import ItemListFormFactory, ItemDropForm, ItemAssignForm, UserManageForm, GlobalItemLockForm, sort_item_choices
-from app.models import User, ItemList, ItemRank, Item, Role, LockedItemList
+from app.models import User, ItemList, ItemRank, Item, Role, LockedItemList, ItemRankAudit
 
 
 @app.route('/')
@@ -99,18 +99,7 @@ def item_list():
         if current_user.item_list_locked:
             return render_template('locked_item_list.html', item_ranks=current_user.item_list.items)
         else:
-            item_list_form = ItemListFormFactory().construct(current_user.item_list, current_user.locked_item_list_id)
-
-            if item_list_form.validate_on_submit():
-                for form_item, old_item_rank in zip(item_list_form.item_rank_fields, current_user.item_list.items):
-                    new_item_id = getattr(item_list_form, form_item).data
-                    if new_item_id != old_item_rank.item_id:
-                        item_rank = ItemRank.query.get(old_item_rank.id)
-                        item_rank.item_id = new_item_id
-                        db.session.add(item_rank)
-                db.session.commit()
-                flash("Wish list has been updated.")
-            return render_template('item_list.html', form=item_list_form)
+            return edit_list_route(current_user, current_user)
     else:
         return redirect(url_for('index'))
 
@@ -120,20 +109,31 @@ def item_list():
 def user_item_list(username):
     if current_user.is_authenticated and current_user.has_role('council'):
         user = User.query.filter_by(username=username).first()
-        item_list_form = ItemListFormFactory().construct(user.item_list, user.locked_item_list_id)
-
-        if item_list_form.validate_on_submit():
-            for form_item, old_item_rank in zip(item_list_form.item_rank_fields, user.item_list.items):
-                new_item_id = getattr(item_list_form, form_item).data
-                if new_item_id != old_item_rank.item_id:
-                    item_rank = ItemRank.query.get(old_item_rank.id)
-                    item_rank.item_id = new_item_id
-                    db.session.add(item_rank)
-            db.session.commit()
-            flash("Wish list has been updated.")
-        return render_template('item_list.html', form=item_list_form)
+        return edit_list_route(user, current_user)
     else:
         return redirect(url_for('index'))
+
+
+def edit_list_route(list_user, edit_user):
+    item_list_form = ItemListFormFactory().construct(list_user.item_list, list_user.locked_item_list_id)
+
+    if item_list_form.validate_on_submit():
+        for form_item, old_item_rank in zip(item_list_form.item_rank_fields, list_user.item_list.items):
+            new_item_id = getattr(item_list_form, form_item).data
+            if new_item_id != old_item_rank.item_id:
+                item_rank = ItemRank.query.get(old_item_rank.id)
+                item_rank_audit = ItemRankAudit(
+                    item_rank_id=item_rank.id,
+                    old_item_id=item_rank.item_id,
+                    new_item_id=new_item_id,
+                    user=edit_user,
+                )
+                db.session.add(item_rank_audit)
+                item_rank.item_id = new_item_id
+                db.session.add(item_rank)
+        db.session.commit()
+        flash("Wish list has been updated.")
+    return render_template('item_list.html', form=item_list_form)
 
 
 @app.route('/assign_item', methods=['GET', 'POST'])
@@ -142,7 +142,7 @@ def assign_item():
     if current_user.is_authenticated and current_user.has_role('council'):
         item_assign_form = ItemAssignForm(current_form=request.form)
 
-        all_items = sort_item_choices([(i.id, i.name) for i in Item.query.all()])
+        all_items = sort_item_choices(Item.query.all())
         item_assign_form.item_drop.choices = all_items
 
         item_drop_check_results = []

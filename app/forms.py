@@ -69,7 +69,7 @@ class ItemListFormFactory():
 
         self.ItemListForm.item_rank_fields = []
 
-        for item_rank in current_item_list.items:
+        for item_rank in sorted(current_item_list.items, key=lambda x:x.rank):
             item_rank_field_name = self.slot_name + str(item_rank.rank)
             item_choices = []
             if item_rank.rank in (1, 2):
@@ -99,12 +99,11 @@ class ItemDropForm(FlaskForm):
 
     def __init__(self):
         super().__init__()
-        all_items = [(i.id, i.name) for i in Item.query.all()]
-        self.item_drop.choices = sort_item_choices(all_items)
+        self.item_drop.choices = sort_item_choices(Item.query.all())
 
 
 def sort_item_choices(item_choices):
-    return sorted([(i.id, i.name) for i in item_choices], key=lambda x: x[1] if x[1] != Item.default_name else 'AAAA')
+    return sorted(list(set((i.id, i.name) for i in item_choices)), key=lambda x: x[1] if x[1] != Item.default_name else 'AAAA')
 
 
 def ItemAssignForm(item_ranks=None, current_form=None):

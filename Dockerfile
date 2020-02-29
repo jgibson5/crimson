@@ -1,7 +1,7 @@
 FROM python:3.8.1-slim-buster
 
 RUN apt-get update -y && \
-    apt-get install -y python-pip python-dev
+    apt-get install -y python-pip python-dev libpq-dev
 
 COPY ./requirements.txt /app/requirements.txt
 
