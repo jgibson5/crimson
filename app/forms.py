@@ -56,7 +56,7 @@ class NonValidatingSelectField(SelectField):
         pass
 
 
-def ItemListForm(current_item_list, locked_item_list_id):
+def ItemListForm(current_item_list, locked_item_list_id, as_user_type='raider'):
     slot_name = "item_rank_"
 
     class ItemListForm(FlaskForm):
@@ -69,7 +69,13 @@ def ItemListForm(current_item_list, locked_item_list_id):
     for item_rank in sorted(current_item_list.items, key=lambda x:x.rank):
         item_rank_field_name = slot_name + str(item_rank.rank)
         item_choices = []
-        if item_rank.rank in (1, 2):
+        restricted_slots = tuple()
+        if as_user_type == 'initiate':
+            restricted_slots = (1, 2, 3)
+        elif as_user_type == 'raider':
+            restricted_slots = (1, 2)
+
+        if item_rank.rank in restricted_slots:
             default_item = Item.query.filter_by(name=Item.default_name).first()
             current_rank = LockedItemRank.query.filter_by(rank=item_rank.rank, locked_item_list_id=locked_item_list_id).first()
             promotable_rank = LockedItemRank.query.filter_by(rank=item_rank.rank+1, locked_item_list_id=locked_item_list_id).first()

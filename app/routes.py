@@ -99,6 +99,8 @@ def item_list():
         if current_user.item_list_locked:
             return render_template('locked_item_list.html', item_ranks=current_user.item_list.items)
         else:
+            if current_user.has_role('initiate'):
+                return edit_list_route(current_user, current_user, as_user_type='initiate')
             return edit_list_route(current_user, current_user)
     else:
         return redirect(url_for('index'))
@@ -109,13 +111,13 @@ def item_list():
 def user_item_list(username):
     if current_user.is_authenticated and current_user.has_role('council'):
         user = User.query.filter_by(username=username).first()
-        return edit_list_route(user, current_user)
+        return edit_list_route(user, current_user, as_user_type='council')
     else:
         return redirect(url_for('index'))
 
 
-def edit_list_route(list_user, edit_user):
-    item_list_form = ItemListForm(list_user.item_list, list_user.locked_item_list_id)
+def edit_list_route(list_user, edit_user, as_user_type='raider'):
+    item_list_form = ItemListForm(list_user.item_list, list_user.locked_item_list_id, as_user_type=as_user_type)
 
     if item_list_form.validate_on_submit():
         item_rank_fields = item_list_form.item_rank_fields
