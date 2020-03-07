@@ -56,41 +56,35 @@ class NonValidatingSelectField(SelectField):
         pass
 
 
-class ItemListFormFactory():
+def ItemListForm(current_item_list, locked_item_list_id):
     slot_name = "item_rank_"
 
     class ItemListForm(FlaskForm):
         submit = SubmitField('Update List')
 
-        # def validate
+    all_items = sort_item_choices(Item.query.all())
 
-    def construct(self, current_item_list, locked_item_list_id):
-        all_items = sort_item_choices(Item.query.all())
+    ItemListForm.item_rank_fields = []
 
-        self.ItemListForm.item_rank_fields = []
+    for item_rank in sorted(current_item_list.items, key=lambda x:x.rank):
+        item_rank_field_name = slot_name + str(item_rank.rank)
+        item_choices = []
+        if item_rank.rank in (1, 2):
+            default_item = Item.query.filter_by(name=Item.default_name).first()
+            current_rank = LockedItemRank.query.filter_by(rank=item_rank.rank, locked_item_list_id=locked_item_list_id).first()
+            promotable_rank = LockedItemRank.query.filter_by(rank=item_rank.rank+1, locked_item_list_id=locked_item_list_id).first()
+            unsorted_choices = [default_item, current_rank.item, promotable_rank.item]
+            item_choices = sort_item_choices(unsorted_choices)
+        else:
+            item_choices = all_items
+        setattr(
+            ItemListForm,
+            item_rank_field_name,
+            NonValidatingSelectField(f"Item Rank {item_rank.rank}", choices=item_choices, default=item_rank.item_id, validators=[])
+        )
+        ItemListForm.item_rank_fields.append(item_rank_field_name)
 
-        for item_rank in sorted(current_item_list.items, key=lambda x:x.rank):
-            item_rank_field_name = self.slot_name + str(item_rank.rank)
-            item_choices = []
-            if item_rank.rank in (1, 2):
-                default_item = Item.query.filter_by(name=Item.default_name).first()
-                current_rank = LockedItemRank.query.filter_by(rank=item_rank.rank, locked_item_list_id=locked_item_list_id).first()
-                promotable_rank = LockedItemRank.query.filter_by(rank=item_rank.rank+1, locked_item_list_id=locked_item_list_id).first()
-                demotable_rank = LockedItemRank.query.filter_by(rank=item_rank.rank-1, locked_item_list_id=locked_item_list_id).first()
-                unsorted_choices = [default_item, current_rank.item, promotable_rank.item]
-                if demotable_rank is not None and demotable_rank.item is not None:
-                    unsorted_choices.append(demotable_rank.item)
-                item_choices = sort_item_choices(unsorted_choices)
-            else:
-                item_choices = all_items
-            setattr(
-                self.ItemListForm,
-                item_rank_field_name,
-                NonValidatingSelectField(f"Item Rank {item_rank.rank}", choices=item_choices, default=item_rank.item_id, validators=[]) # validators=[DataRequired()]
-            )
-            self.ItemListForm.item_rank_fields.append(item_rank_field_name)
-
-        return self.ItemListForm()
+    return ItemListForm()
 
 
 class ItemDropForm(FlaskForm):

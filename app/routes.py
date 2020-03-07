@@ -3,7 +3,7 @@ from app import app, db
 from flask_user import current_user, login_required, roles_required
 from werkzeug.urls import url_parse
 
-from app.forms import ItemListFormFactory, ItemDropForm, ItemAssignForm, UserManageForm, GlobalItemLockForm, sort_item_choices
+from app.forms import ItemListForm, ItemDropForm, ItemAssignForm, UserManageForm, GlobalItemLockForm, sort_item_choices
 from app.models import User, ItemList, ItemRank, Item, Role, LockedItemList, ItemRankAudit
 
 
@@ -115,10 +115,13 @@ def user_item_list(username):
 
 
 def edit_list_route(list_user, edit_user):
-    item_list_form = ItemListFormFactory().construct(list_user.item_list, list_user.locked_item_list_id)
+    item_list_form = ItemListForm(list_user.item_list, list_user.locked_item_list_id)
 
     if item_list_form.validate_on_submit():
-        for form_item, old_item_rank in zip(item_list_form.item_rank_fields, list_user.item_list.items):
+        item_rank_fields = item_list_form.item_rank_fields
+        item_list_item_ranks = sorted(list_user.item_list.items, key=lambda x: x.rank)
+
+        for form_item, old_item_rank in zip(item_rank_fields, item_list_item_ranks):
             new_item_id = getattr(item_list_form, form_item).data
             if new_item_id != old_item_rank.item_id:
                 item_rank = ItemRank.query.get(old_item_rank.id)
