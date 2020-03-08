@@ -139,6 +139,9 @@ class ItemRankAudit(db.Model):
     new_item_id = db.Column(db.Integer, db.ForeignKey('item.id'))
     new_item = db.relationship('Item', foreign_keys=[new_item_id])
 
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    user = db.relationship('User', foreign_keys=[user_id])
+    list_user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    list_user = db.relationship('User', foreign_keys=[list_user_id])
+
+    edit_user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    edit_user = db.relationship('User', foreign_keys=[edit_user_id])
 

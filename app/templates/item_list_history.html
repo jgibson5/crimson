@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Item List History for {{ username }}</h1>
+    <p>Timestamp | Editing User | Old Item | New Item</p>
+    {% for audit_record in history %}
+    {{ audit_record.timestamp }} | {{ audit_record.edit_user.username }} | {{ audit_record.old_item.name }} | {{ audit_record.new_item.name }}<br>
+    {% endfor %}
+{% endblock %}
+

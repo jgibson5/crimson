@@ -120,6 +120,18 @@ def user_item_list(username):
         return redirect(url_for('index'))
 
 
+@app.route('/item_list/<username>/history')
+@roles_required('council')
+def item_list_history(username):
+    if current_user.is_authenticated and current_user.has_role('council'):
+        user = User.query.filter_by(username=username).first()
+        audit_history = ItemRankAudit.query.filter_by(list_user=user).all()
+        audit_history.sort(key=lambda x: x.timestamp, reverse=True)
+        return render_template('item_list_history.html', username=username, history=audit_history)
+    else:
+        return redirect(url_for('index'))
+
+
 def edit_list_route(list_user, edit_user, as_user_type='raider'):
     item_list_form = ItemListForm(list_user.item_list, list_user.locked_item_list_id, as_user_type=as_user_type)
 
@@ -135,13 +147,15 @@ def update_item_list(new_item_ids, list_user, edit_user):
     current_item_ranks = sorted(list_user.item_list.items, key=lambda x: x.rank)
 
     for new_item_id, old_item_rank in zip(new_item_ids, current_item_ranks):
+        new_item_id = int(new_item_id)
         if new_item_id != old_item_rank.item_id:
             item_rank = ItemRank.query.get(old_item_rank.id)
             item_rank_audit = ItemRankAudit(
                 item_rank_id=item_rank.id,
                 old_item_id=item_rank.item_id,
                 new_item_id=new_item_id,
-                user=edit_user,
+                edit_user=edit_user,
+                list_user=list_user,
             )
             db.session.add(item_rank_audit)
             item_rank.item_id = new_item_id
@@ -195,7 +209,8 @@ def assign_item():
                         item_rank_id=item_rank_to_update.id,
                         old_item_id=item_id,
                         new_item_id=default_item.id,
-                        user=current_user,
+                        list_user=user,
+                        edit_user=current_user,
                     )
                     db.session.add(item_rank_audit)
                     db.session.add(item_rank_to_update)
@@ -213,6 +228,7 @@ def assign_item():
         )
     else:
         return redirect(url_for('index'))
+
 
 @app.route('/workbook', methods=['GET', 'POST'])
 @roles_required('council')
@@ -239,7 +255,6 @@ def workbook():
                 flash(f"Creating a new account and wishlist for {character}.")
             update_item_list(lists[character] , list_user, current_user)
 
-        print(lists)
         return redirect(url_for('index'))
 
     return render_template('workbook.html', form=form)
