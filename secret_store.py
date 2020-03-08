@@ -53,9 +53,7 @@ class SecretStore():
                 secret = get_secret_value_response['SecretString']
             else:
                 secret = base64.b64decode(get_secret_value_response['SecretBinary'])
-        
-        print(secret_name)
-        print(secret)
+
         return ujson.loads(secret)
 
     def _error(self, e, quiet):

@@ -2,9 +2,13 @@ from flask import render_template, flash, redirect, url_for, request
 from app import app, db
 from flask_user import current_user, login_required, roles_required
 from werkzeug.urls import url_parse
+from werkzeug.utils import secure_filename
+import os
 
-from app.forms import ItemListForm, ItemDropForm, ItemAssignForm, UserManageForm, GlobalItemLockForm, sort_item_choices
+from app.forms import ItemListForm, ItemDropForm, ItemAssignForm, UserManageForm, GlobalItemLockForm, sort_item_choices, WorkbookForm
 from app.models import User, ItemList, ItemRank, Item, Role, LockedItemList, ItemRankAudit
+
+from app.workbook_manager import read_workbook
 
 
 @app.route('/')
@@ -121,24 +125,29 @@ def edit_list_route(list_user, edit_user, as_user_type='raider'):
 
     if item_list_form.validate_on_submit():
         item_rank_fields = item_list_form.item_rank_fields
-        item_list_item_ranks = sorted(list_user.item_list.items, key=lambda x: x.rank)
-
-        for form_item, old_item_rank in zip(item_rank_fields, item_list_item_ranks):
-            new_item_id = getattr(item_list_form, form_item).data
-            if new_item_id != old_item_rank.item_id:
-                item_rank = ItemRank.query.get(old_item_rank.id)
-                item_rank_audit = ItemRankAudit(
-                    item_rank_id=item_rank.id,
-                    old_item_id=item_rank.item_id,
-                    new_item_id=new_item_id,
-                    user=edit_user,
-                )
-                db.session.add(item_rank_audit)
-                item_rank.item_id = new_item_id
-                db.session.add(item_rank)
-        db.session.commit()
-        flash("Wish list has been updated.")
+        new_item_ids = []
+        for field in item_rank_fields:
+            new_item_ids.append(getattr(item_list_form, field).data)
+        update_item_list(new_item_ids, list_user, edit_user)
     return render_template('item_list.html', form=item_list_form)
+
+def update_item_list(new_item_ids, list_user, edit_user):
+    current_item_ranks = sorted(list_user.item_list.items, key=lambda x: x.rank)
+
+    for new_item_id, old_item_rank in zip(new_item_ids, current_item_ranks):
+        if new_item_id != old_item_rank.item_id:
+            item_rank = ItemRank.query.get(old_item_rank.id)
+            item_rank_audit = ItemRankAudit(
+                item_rank_id=item_rank.id,
+                old_item_id=item_rank.item_id,
+                new_item_id=new_item_id,
+                user=edit_user,
+            )
+            db.session.add(item_rank_audit)
+            item_rank.item_id = new_item_id
+            db.session.add(item_rank)
+    db.session.commit()
+    flash("Wish list has been updated.")
 
 
 @app.route('/assign_item', methods=['GET', 'POST'])
@@ -182,6 +191,13 @@ def assign_item():
                     user = User.query.filter_by(username=item_rank['username']).first()
                     item_rank_to_update = ItemRank.query.filter_by(rank=item_rank['rank'], item_list_id=user.item_list_id).first()
                     item_rank_to_update.item_id = default_item.id
+                    item_rank_audit = ItemRankAudit(
+                        item_rank_id=item_rank_to_update.id,
+                        old_item_id=item_id,
+                        new_item_id=default_item.id,
+                        user=current_user,
+                    )
+                    db.session.add(item_rank_audit)
                     db.session.add(item_rank_to_update)
                     db.session.commit()
 
@@ -197,3 +213,41 @@ def assign_item():
         )
     else:
         return redirect(url_for('index'))
+
+@app.route('/workbook', methods=['GET', 'POST'])
+@roles_required('council')
+def workbook():
+    form = WorkbookForm()
+    if form.validate_on_submit():
+        f = form.workbook.data
+        filename = secure_filename(f.filename)
+        filepath = os.path.join(
+            app.instance_path, 'workbooks', filename
+        )
+        f.save(filepath)
+        item_map = Item.item_name_to_id_map()
+        lists = read_workbook(filepath, item_map)
+        create_new_users = form.add_new_users.data
+        for character in lists.keys():
+            print(character)
+            list_user = User.query.filter_by(username=character).first()
+            if not list_user and not create_new_users:
+                flash(f"Unable to find a wish list for {character}.")
+                continue
+            elif not list_user:
+                list_user = create_temp_user(character)
+                flash(f"Creating a new account and wishlist for {character}.")
+            update_item_list(lists[character] , list_user, current_user)
+
+        print(lists)
+        return redirect(url_for('index'))
+
+    return render_template('workbook.html', form=form)
+
+def create_temp_user(username):
+    from app import user_manager # TODO remove this once users aren't created by the workbook upload
+    user = User(username=username, active=True, password=app.user_manager.hash_password('asdf'))
+    initiate_role = Role.query.filter_by(name='initiate').first()
+    user.roles.append(initiate_role)
+    return user
+

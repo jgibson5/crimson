@@ -33,8 +33,6 @@ items:
   - Bloodfang Bracers
   - Bloodfang Chestpiece
   - Bloodfang Gloves
-  - Bloodfang Gloves
-  - Bloodfang Gloves
   - Bloodfang Hood
   - Bloodfang Pants
   - Bloodfang Spaulders
@@ -83,15 +81,13 @@ items:
   - Doom's Edge
   - Draconic Avenger
   - Draconic Maul
-  - Dragonbreath Hand Cannon
-  - Dragonfang Blade
   - Dragon's Blood Cape
   - Dragon's Touch
+  - Dragonbreath Hand Cannon
+  - Dragonfang Blade
   - Dragonstalker's Belt
   - Dragonstalker's Bracers
   - Dragonstalker's Breastplate
-  - Dragonstalker's Gauntlets
-  - Dragonstalker's Gauntlets
   - Dragonstalker's Gauntlets
   - Dragonstalker's Greaves
   - Dragonstalker's Helm
@@ -99,10 +95,6 @@ items:
   - Dragonstalker's Spaulders
   - Drake Fang Talisman
   - Drake Talon Cleaver
-  - Drake Talon Cleaver
-  - Drake Talon Cleaver
-  - Drake Talon Pauldrons
-  - Drake Talon Pauldrons
   - Drake Talon Pauldrons
   - Drillborer Disk
   - Earhfury Belt
@@ -121,7 +113,7 @@ items:
   - Empowered Leggings
   - Epaulets of Ten Storms
   - Eskhandar's Collar
-  - Eskhandars Right Claw
+  - Eskhandar's Right Claw
   - Essence Gatherer
   - Felheart Belt
   - Felheart Bracers
@@ -140,10 +132,6 @@ items:
   - Flamewaker Legplates
   - Gauntlets of Might
   - Gauntlets of Ten Storms
-  - Gauntlets of Ten Storms
-  - Gauntlets of Ten Storms
-  - Gauntlets of Wrath
-  - Gauntlets of Wrath
   - Gauntlets of Wrath
   - Giantstalker's Belt
   - Giantstalker's Boots
@@ -162,8 +150,6 @@ items:
   - Gutgore Ripper
   - Halo of Transcendence
   - Handguards of Transcendence
-  - Handguards of Transcendence
-  - Handguards of Transcendence
   - Head of Nefarian
   - Head of Onyxia
   - Heartstriker
@@ -177,8 +163,6 @@ items:
   - Judgement Belt
   - Judgement Bindings
   - Judgement Breastplate
-  - Judgement Gauntlets
-  - Judgement Gauntlets
   - Judgement Gauntlets
   - Judgement Sabatons
   - Judgement Spaulders
@@ -200,6 +184,7 @@ items:
   - Malfurion's Blessed Bulwark
   - Malistar's Defender
   - Mana Igniting Cord
+  - Manastorm Leggings
   - Mantle of Prophecy
   - Mantle of the Blackwing Cabal
   - Medallion of Steadfast Might
@@ -211,8 +196,6 @@ items:
   - Nemesis Boots
   - Nemesis Bracers
   - Nemesis Gloves
-  - Nemesis Gloves
-  - Nemesis Gloves
   - Nemesis Leggings
   - Nemesis Robes
   - Nemesis Skullcap
@@ -221,8 +204,6 @@ items:
   - Netherwind Bindings
   - Netherwind Boots
   - Netherwind Crown
-  - Netherwind Gloves
-  - Netherwind Gloves
   - Netherwind Gloves
   - Netherwind Mantle
   - Netherwind Pants
@@ -246,15 +227,12 @@ items:
   - Prestor's Talisman of Connivery
   - Primalist's Linked Legguards
   - Primalist's Linked Waistguard
+  - Puissant Cape
   - Pure Elementium Band
   - Quick Strike Ring
   - Red Dragonscale Protector
   - Rejuvenating Gem
-  - Rejuvenating Gem
-  - Rejuvenating Gem
   - Ring of Binding
-  - Ring of Blackrock
-  - Ring of Blackrock
   - Ring of Blackrock
   - Ring of Spell Power
   - Ringo's Blizzard Boots
@@ -270,8 +248,6 @@ items:
   - Sash of Whispered Secrets
   - Scrolls of Blinding Light
   - Seal of the Archmagus
-  - Shadow Wing Focus Staff
-  - Shadow Wing Focus Staff
   - Shadow Wing Focus Staff
   - Shadowstrike
   - Shard of the Scale
@@ -289,15 +265,11 @@ items:
   - Stormrage Chestguard
   - Stormrage Cover
   - Stormrage Handguards
-  - Stormrage Handguards
-  - Stormrage Handguards
   - Stormrage Leggings
   - Stormrage Pauldrons
   - Striker's Mark
   - Styleen's Impeding Scarab
   - Talisman of Ephemeral Power
-  - Taut Dragonhide Belt
-  - Taut Dragonhide Belt
   - Taut Dragonhide Belt
   - Taut Dragonhide Gloves
   - Taut Dragonhide Shoulderpads

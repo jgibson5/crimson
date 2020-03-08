@@ -64,9 +64,16 @@ class Item(db.Model):
     name = db.Column(db.String(64), index=True, unique=True)
 
     default_name = 'empty'
-    
+
     def __repr__(self):
         return '<Item {}>'.format(self.name)
+
+    def item_name_to_id_map():
+        items = Item.query.all()
+        item_map = {}
+        for item in items:
+            item_map[item.name] = item.id
+        return item_map
 
 
 class ItemRank(db.Model):

@@ -3,6 +3,7 @@ from wtforms import StringField, PasswordField, BooleanField, SubmitField, Selec
 from wtforms.validators import DataRequired, Email, EqualTo
 from wtforms.widgets.core import ListWidget, CheckboxInput
 from wtforms.ext.sqlalchemy.fields import QuerySelectField
+from flask_wtf.file import FileField, FileRequired
 
 from app.models import User, Item, Role, LockedItemRank
 
@@ -130,3 +131,9 @@ def ItemAssignForm(item_ranks=None, current_form=None):
 class GlobalItemLockForm(FlaskForm):
     force_lock_lists = SubmitField('Lock')
     force_unlock_lists = SubmitField('Unlock')
+
+
+class WorkbookForm(FlaskForm):
+    workbook = FileField(validators=[FileRequired()])
+    add_new_users = BooleanField("Add New Characters", false_values=[False], default=False)
+    submit = SubmitField("Upload Workbook")

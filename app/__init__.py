@@ -47,8 +47,8 @@ def item_seed():
             db.session.add(models.Role(name=role_name))
     db.session.commit()
 
-    if not models.User.query.filter(models.User.username=='lucky').first():
-        user1 = models.User(username='lucky', email='lucky@example.com', active=True,
+    if not models.User.query.filter(models.User.username=='admin').first():
+        user1 = models.User(username='admin', email='joe.gibson5@example.com', active=True,
                 password=user_manager.hash_password('asdf'))
         council_role = models.Role.query.filter_by(name='council').first()
         user1.roles.append(council_role)
