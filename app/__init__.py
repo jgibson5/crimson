@@ -14,8 +14,11 @@ import io
 app = Flask(__name__)
 app.config.from_object(Config)
 
+
+MIGRATION_DIR = 'migrations' if app.config['MODE'] == 'production' else 'dev-migrations'
+
 db = SQLAlchemy(app)
-migrate = Migrate(app, db)
+migrate = Migrate(app, db, directory=MIGRATION_DIR)
 
 Bootstrap(app)
 
