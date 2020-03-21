@@ -1,9 +1,10 @@
 import xlrd
+import xlwt
 
 def read_workbook(workbook, item_map):
     wb = xlrd.open_workbook(workbook)
 
-    ignored_sheets = ('itemlist', 'Rules', 'Export Summary')
+    ignored_sheets = ('itemlist', 'Rules', 'Export Summary', 'Completed')
 
     default_item_id = item_map['empty']
 
@@ -24,5 +25,23 @@ def read_workbook(workbook, item_map):
 
     return user_lists
 
+def write_workbook(user_lists, all_items, path):
+    wb = xlwt.Workbook()
+    item_list_sheet = wb.add_sheet('itemlist')
 
+    i = 1
+    for item in all_items:
+        item_list_sheet.write(i, 1, item)
+        i += 1
 
+    for user in user_lists.keys():
+        user_list = user_lists[user]
+
+        user_list_sheet = wb.add_sheet(user)
+        i = 1
+        for item in user_list:
+            user_list_sheet.write(i, 1, f"Item {i}")
+            user_list_sheet.write(i, 2, item)
+            i += 1
+
+    wb.save(path)

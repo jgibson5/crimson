@@ -1,14 +1,15 @@
-from flask import render_template, flash, redirect, url_for, request
+from flask import render_template, flash, redirect, url_for, request, send_file
 from app import app, db
 from flask_user import current_user, login_required, roles_required
 from werkzeug.urls import url_parse
 from werkzeug.utils import secure_filename
 import os
+import uuid
 
 from app.forms import ItemListForm, ItemDropForm, ItemAssignForm, UserManageForm, GlobalItemLockForm, sort_item_choices, WorkbookForm
 from app.models import User, ItemList, ItemRank, Item, Role, LockedItemList, ItemRankAudit
 
-from app.workbook_manager import read_workbook
+from app.workbook_manager import read_workbook, write_workbook
 
 
 @app.route('/')
@@ -265,4 +266,21 @@ def create_temp_user(username):
     initiate_role = Role.query.filter_by(name='initiate').first()
     user.roles.append(initiate_role)
     return user
+
+
+@app.route('/workbook/download')
+@roles_required('council')
+def workbook_download():
+    path = os.path.join(app.instance_path, 'workbooks', str(uuid.uuid4()))
+
+    write_workbook({}, [i[1] for i in sort_item_choices(Item.query.all())], path)
+
+    attachment_name = f"wish_lists.xls"
+
+    return send_file(path, attachment_filename=attachment_name)
+
+
+
+
+
 
