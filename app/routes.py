@@ -6,7 +6,7 @@ from werkzeug.utils import secure_filename
 import os
 import uuid
 
-from app.forms import ItemListForm, ItemDropForm, ItemAssignForm, UserManageForm, GlobalItemLockForm, sort_item_choices, WorkbookForm
+from app.forms import ItemListForm, ItemDropForm, ItemAssignForm, UserManageForm, GlobalItemLockForm, sort_item_choices, WorkbookForm, PasswordForm
 from app.models import User, ItemList, ItemRank, Item, Role, LockedItemList, ItemRankAudit
 
 from app.workbook_manager import read_workbook, write_workbook
@@ -18,119 +18,127 @@ def index():
     return render_template('index.html')
 
 
+@app.route('/user/profile', methods=['GET', 'POST'])
+@login_required
+def profile():
+    return render_template('profile.html')
+
+
 @app.route('/user/manage', methods=['GET', 'POST'])
 @roles_required('council')
 def manage_users():
-    if current_user.is_authenticated and current_user.has_role('council'):
-        user_manage_form = UserManageForm()
-        if user_manage_form.validate_on_submit():
-            changes_made = False
-            for username in user_manage_form.users:
-                user = User.query.filter_by(username=username).first()
-                role_field = user_manage_form.role_fields[username]
-                selected_roles = getattr(user_manage_form, role_field).data
-                role_update = False
-                for role_id in selected_roles:
-                    if role_id not in (role.id for role in user.roles):
-                        role_update = True
-                for role in user.roles:
-                    if role.id not in (selected_roles):
-                        role_update = True
-                if role_update:
-                    roles = [Role.query.get(role_id) for role_id in selected_roles]
-                    user.roles = roles
+    user_manage_form = UserManageForm()
+    if user_manage_form.validate_on_submit():
+        changes_made = False
+        for username in user_manage_form.users:
+            user = User.query.filter_by(username=username).first()
+            role_field = user_manage_form.role_fields[username]
+            selected_roles = getattr(user_manage_form, role_field).data
+            role_update = False
+            for role_id in selected_roles:
+                if role_id not in (role.id for role in user.roles):
+                    role_update = True
+            for role in user.roles:
+                if role.id not in (selected_roles):
+                    role_update = True
+            if role_update:
+                roles = [Role.query.get(role_id) for role_id in selected_roles]
+                user.roles = roles
 
-                active_update = False
-                active_field = user_manage_form.active_fields[username]
-                selected_active = getattr(user_manage_form, active_field).data
+            active_update = False
+            active_field = user_manage_form.active_fields[username]
+            selected_active = getattr(user_manage_form, active_field).data
 
-                if selected_active != user.active:
-                    user.active = selected_active
-                    active_update = True
+            if selected_active != user.active:
+                user.active = selected_active
+                active_update = True
 
-                list_lock_update = False
-                list_locked_field = user_manage_form.list_locked_fields[username]
-                selected_list_locked = getattr(user_manage_form, list_locked_field).data
+            list_lock_update = False
+            list_locked_field = user_manage_form.list_locked_fields[username]
+            selected_list_locked = getattr(user_manage_form, list_locked_field).data
 
-                if selected_list_locked != user.item_list_locked:
-                    user.item_list_locked = selected_list_locked
-                    if selected_list_locked:
-                        user.locked_item_list = LockedItemList(item_list=user.item_list)
-                    list_lock_update = True
+            if selected_list_locked != user.item_list_locked:
+                user.item_list_locked = selected_list_locked
+                if selected_list_locked:
+                    user.locked_item_list = LockedItemList(item_list=user.item_list)
+                list_lock_update = True
 
-                if role_update or active_update or list_lock_update:
-                    db.session.add(user)
-                    db.session.commit()
-                    changes_made = True
-            if changes_made:
-                flash("Changes to users have been saved.")
+            if role_update or active_update or list_lock_update:
+                db.session.add(user)
+                db.session.commit()
+                changes_made = True
+        if changes_made:
+            flash("Changes to users have been saved.")
 
-        return render_template('user_manager.html', form=user_manage_form)
-    else:
-        return redirect(url_for('index'))
+    return render_template('user_manager.html', form=user_manage_form)
+
+
+@app.route('/user/<username>/password_reset', methods=['GET', 'POST'])
+@roles_required('council')
+def user_password_reset(username):
+    from app import user_manager
+
+    password_form = PasswordForm()
+    success = False
+    if password_form.validate_on_submit():
+        user = User.query.filter_by(username=username).first()
+        user.password = user_manager.hash_password(password_form.password.data)
+        db.session.add(user)
+        db.session.commit()
+        success = True
+
+    return render_template('user_password_reset.html', form=password_form, success=success)
 
 
 @app.route('/item_list_lock', methods=['GET', 'POST'])
 @roles_required('council')
 def item_list_lock():
-    if current_user.is_authenticated and current_user.has_role('council'):
-        global_item_lock_form = GlobalItemLockForm()
-        if global_item_lock_form.validate_on_submit():
-            lock_lists = None
-            lock_text = ""
-            if global_item_lock_form.force_lock_lists.data:
-                lock_lists = True
-                lock_text = "locked"
-            elif global_item_lock_form.force_unlock_lists.data:
-                lock_lists = False
-                lock_text = "unlocked"
-            users = User.query.all()
-            for user in users:
-                user.item_list_locked = lock_lists
-                if lock_lists:
-                    user.locked_item_list = LockedItemList(item_list=user.item_list)
-                db.session.add(user)
-            db.session.commit()
-            flash(f"Item lists have been {lock_text}.")
-        return render_template('global_item_list_lock.html', form=global_item_lock_form)
-    else:
-        return redirect(url_for('index'))
+    global_item_lock_form = GlobalItemLockForm()
+    if global_item_lock_form.validate_on_submit():
+        lock_lists = None
+        lock_text = ""
+        if global_item_lock_form.force_lock_lists.data:
+            lock_lists = True
+            lock_text = "locked"
+        elif global_item_lock_form.force_unlock_lists.data:
+            lock_lists = False
+            lock_text = "unlocked"
+        users = User.query.all()
+        for user in users:
+            user.item_list_locked = lock_lists
+            if lock_lists:
+                user.locked_item_list = LockedItemList(item_list=user.item_list)
+            db.session.add(user)
+        db.session.commit()
+        flash(f"Item lists have been {lock_text}.")
+    return render_template('global_item_list_lock.html', form=global_item_lock_form)
 
 
 @app.route('/item_list', methods=['GET', 'POST'])
 @login_required
 def item_list():
-    if current_user.is_authenticated:
-        if current_user.item_list_locked:
-            return render_template('locked_item_list.html', item_ranks=current_user.item_list.items)
-        else:
-            if current_user.has_role('initiate'):
-                return edit_list_route(current_user, current_user, as_user_type='initiate')
-            return edit_list_route(current_user, current_user)
+    if current_user.item_list_locked:
+        return render_template('locked_item_list.html', item_ranks=current_user.item_list.items)
     else:
-        return redirect(url_for('index'))
+        if current_user.has_role('initiate'):
+            return edit_list_route(current_user, current_user, as_user_type='initiate')
+        return edit_list_route(current_user, current_user)
 
 
 @app.route('/item_list/<username>', methods=['GET', 'POST'])
 @roles_required('council')
 def user_item_list(username):
-    if current_user.is_authenticated and current_user.has_role('council'):
-        user = User.query.filter_by(username=username).first()
-        return edit_list_route(user, current_user, as_user_type='council')
-    else:
-        return redirect(url_for('index'))
+    user = User.query.filter_by(username=username).first()
+    return edit_list_route(user, current_user, as_user_type='council')
 
 
 @app.route('/item_list/<username>/history')
 @roles_required('council')
 def item_list_history(username):
-    if current_user.is_authenticated and current_user.has_role('council'):
-        user = User.query.filter_by(username=username).first()
-        audit_history = ItemRankAudit.query.filter_by(list_user=user).all()
-        audit_history.sort(key=lambda x: x.timestamp, reverse=True)
-        return render_template('item_list_history.html', username=username, history=audit_history)
-    else:
-        return redirect(url_for('index'))
+    user = User.query.filter_by(username=username).first()
+    audit_history = ItemRankAudit.query.filter_by(list_user=user).all()
+    audit_history.sort(key=lambda x: x.timestamp, reverse=True)
+    return render_template('item_list_history.html', username=username, history=audit_history)
 
 
 def edit_list_route(list_user, edit_user, as_user_type='raider'):
@@ -168,67 +176,64 @@ def update_item_list(new_item_ids, list_user, edit_user):
 @app.route('/assign_item', methods=['GET', 'POST'])
 @roles_required('council')
 def assign_item():
-    if current_user.is_authenticated and current_user.has_role('council'):
-        item_assign_form = ItemAssignForm(current_form=request.form)
+    item_assign_form = ItemAssignForm(current_form=request.form)
 
-        all_items = sort_item_choices(Item.query.all())
+    all_items = sort_item_choices(Item.query.all())
+    item_assign_form.item_drop.choices = all_items
+
+    item_drop_check_results = []
+    item_check_error = ''
+
+    if item_assign_form.validate_on_submit():
+
+        item_id = item_assign_form.item_drop.data
+        active_users = User.query.filter_by(active=True).all()
+
+        item_ranks = ItemRank.query.filter(ItemRank.item_id==item_id, ItemRank.item_list_id.in_(user.item_list_id for user in active_users)).all()
+
+        for item_rank in item_ranks:
+            user = User.query.filter_by(item_list_id=item_rank.item_list_id).first()
+            item_drop_check_results.append({'rank': item_rank.rank, 'username': user.username})
+
+        if not item_drop_check_results:
+            item_check_error = 'Item not found in any Wish Lists.'
+
+        item_drop_check_results.sort(key=lambda x: x['rank'])
+        item_assign_form = ItemAssignForm(item_ranks=item_drop_check_results, current_form=request.form)
         item_assign_form.item_drop.choices = all_items
+        item_assign_form.item_drop.default = item_id
 
-        item_drop_check_results = []
-        item_check_error = ''
+        assign_click = False
+        for field_name in item_assign_form.assign_fields:
+            field = getattr(item_assign_form, field_name)
+            if field.data:
+                assign_click = True
+                item_rank = item_assign_form.parse_label(field_name)
+                default_item = Item.query.filter_by(name=Item.default_name).first()
+                user = User.query.filter_by(username=item_rank['username']).first()
+                item_rank_to_update = ItemRank.query.filter_by(rank=item_rank['rank'], item_list_id=user.item_list_id).first()
+                item_rank_to_update.item_id = default_item.id
+                item_rank_audit = ItemRankAudit(
+                    item_rank_id=item_rank_to_update.id,
+                    old_item_id=item_id,
+                    new_item_id=default_item.id,
+                    list_user=user,
+                    edit_user=current_user,
+                )
+                db.session.add(item_rank_audit)
+                db.session.add(item_rank_to_update)
+                db.session.commit()
 
-        if item_assign_form.validate_on_submit():
-
-            item_id = item_assign_form.item_drop.data
-            active_users = User.query.filter_by(active=True).all()
-
-            item_ranks = ItemRank.query.filter(ItemRank.item_id==item_id, ItemRank.item_list_id.in_(user.item_list_id for user in active_users)).all()
-
-            for item_rank in item_ranks:
-                user = User.query.filter_by(item_list_id=item_rank.item_list_id).first()
-                item_drop_check_results.append({'rank': item_rank.rank, 'username': user.username})
-
-            if not item_drop_check_results:
-                item_check_error = 'Item not found in any Wish Lists.'
-
-            item_drop_check_results.sort(key=lambda x: x['rank'])
-            item_assign_form = ItemAssignForm(item_ranks=item_drop_check_results, current_form=request.form)
+        if assign_click:
+            item_assign_form = ItemAssignForm()
             item_assign_form.item_drop.choices = all_items
             item_assign_form.item_drop.default = item_id
 
-            assign_click = False
-            for field_name in item_assign_form.assign_fields:
-                field = getattr(item_assign_form, field_name)
-                if field.data:
-                    assign_click = True
-                    item_rank = item_assign_form.parse_label(field_name)
-                    default_item = Item.query.filter_by(name=Item.default_name).first()
-                    user = User.query.filter_by(username=item_rank['username']).first()
-                    item_rank_to_update = ItemRank.query.filter_by(rank=item_rank['rank'], item_list_id=user.item_list_id).first()
-                    item_rank_to_update.item_id = default_item.id
-                    item_rank_audit = ItemRankAudit(
-                        item_rank_id=item_rank_to_update.id,
-                        old_item_id=item_id,
-                        new_item_id=default_item.id,
-                        list_user=user,
-                        edit_user=current_user,
-                    )
-                    db.session.add(item_rank_audit)
-                    db.session.add(item_rank_to_update)
-                    db.session.commit()
-
-            if assign_click:
-                item_assign_form = ItemAssignForm()
-                item_assign_form.item_drop.choices = all_items
-                item_assign_form.item_drop.default = item_id
-
-        return render_template(
-            'item_drop.html',
-            form=item_assign_form,
-            item_check_error=item_check_error,
-        )
-    else:
-        return redirect(url_for('index'))
+    return render_template(
+        'item_drop.html',
+        form=item_assign_form,
+        item_check_error=item_check_error,
+    )
 
 
 @app.route('/workbook', methods=['GET', 'POST'])

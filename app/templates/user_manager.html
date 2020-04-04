@@ -6,7 +6,7 @@
         {{ form.hidden_tag() }}
 
         {% for user in form.users %}
-        {{ user }} | <a href="{{ url_for('user_item_list', username=user) }}">Wish List</a> | <a href="{{ url_for('item_list_history', username=user) }}">Audit History</a>
+        {{ user }} | <a href="{{ url_for('user_item_list', username=user) }}">Wish List</a> | <a href="{{ url_for('item_list_history', username=user) }}">Audit History</a> | <a href="{{ url_for('user_password_reset', username=user) }}">Reset Password</a>
         <br>
         {{ form[form.role_fields[user]].label }}{{ form[form.role_fields[user]] }}
         {{ form[form.active_fields[user]].label }}{{ form[form.active_fields[user]] }}

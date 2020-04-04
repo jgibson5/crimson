@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, BooleanField, SubmitField, SelectField, SelectMultipleField
+from wtforms import StringField, BooleanField, SubmitField, SelectField, SelectMultipleField
 from wtforms.validators import DataRequired, Email, EqualTo
 from wtforms.widgets.core import ListWidget, CheckboxInput
 from wtforms.ext.sqlalchemy.fields import QuerySelectField
@@ -137,3 +137,9 @@ class WorkbookForm(FlaskForm):
     workbook = FileField(validators=[FileRequired()])
     add_new_users = BooleanField("Add New Characters", false_values=[False], default=False)
     submit = SubmitField("Upload Workbook")
+
+
+class PasswordForm(FlaskForm):
+    password = StringField("New password")
+    submit = SubmitField("Change password")
+
