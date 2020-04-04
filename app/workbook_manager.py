@@ -29,19 +29,19 @@ def write_workbook(user_lists, all_items, path):
     wb = xlwt.Workbook()
     item_list_sheet = wb.add_sheet('itemlist')
 
-    i = 1
+    i = 0
     for item in all_items:
-        item_list_sheet.write(i, 1, item)
+        item_list_sheet.write(i, 0, item)
         i += 1
 
     for user in user_lists.keys():
         user_list = user_lists[user]
 
         user_list_sheet = wb.add_sheet(user)
-        i = 1
+        i = 0
         for item in user_list:
-            user_list_sheet.write(i, 1, f"Item {i}")
-            user_list_sheet.write(i, 2, item)
+            user_list_sheet.write(i, 0, f"Item {i+1}")
+            user_list_sheet.write(i, 1, item)
             i += 1
 
     wb.save(path)

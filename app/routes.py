@@ -273,7 +273,13 @@ def create_temp_user(username):
 def workbook_download():
     path = os.path.join(app.instance_path, 'workbooks', str(uuid.uuid4()))
 
-    write_workbook({}, [i[1] for i in sort_item_choices(Item.query.all())], path)
+    item_lists = {}
+    active_users = User.query.filter_by(active=True).all()
+
+    for user in active_users:
+        item_lists[user.username] = [i.item.name for i in sorted(user.item_list.items, key=lambda x: x.rank)]
+
+    write_workbook(item_lists, [i[1] for i in sort_item_choices(Item.query.all())], path)
 
     attachment_name = f"wish_lists.xls"
 
